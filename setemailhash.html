@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Set e-mail hash</title>
+    <script src="http://cdn.jsdelivr.net/ripple/0.7.30/ripple-lib-min.js"></script>
+    <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/md5.js"></script>
+    <script>
+
+// Loading ripple-lib in a webpage
+var Remote = ripple.Remote;
+var Seed = ripple.Seed;
+
+var remote = new Remote({
+    // see the API Reference for available options
+    trusted:        false,
+    local_signing:  true,
+    local_fee:      true,
+    fee_cushion:     1.5,
+    servers: [
+        {
+            host:    's1.ripple.com'
+            , port:    443
+            , secure:  true
+        }
+    ]
+});
+
+function output(inp) {
+    document.body.appendChild(document.createElement('pre')).innerHTML = inp;
+}
+
+window.onload = function() {
+    var submitbutton = document.getElementById('submitbutton');
+    submitbutton.onclick = function() {submittoserver();};
+}
+
+function submittoserver() {
+    var email = document.getElementById('emailaddress').value;
+    email = email.trim();
+    email = email.toLowerCase();
+
+    if (email === "") {
+        hash = "00000000000000000000000000000000";
+    } else {
+        var hash = CryptoJS.MD5(email);
+        hash = hash.toString();
+        hash = hash.toUpperCase();
+    }
+
+    var MY_ADDRESS = document.getElementById('accountaddress').value;
+    var MY_SECRET = document.getElementById('accountsecret').value;
+
+    remote.connect(function() {
+        // remote connected
+
+        // see the API Reference for available functions
+
+        var str;
+
+        if (!Seed.from_json(MY_SECRET).is_valid()) {
+            output("Error: Secret invalid");
+        }
+
+        remote.set_secret(MY_ADDRESS, MY_SECRET);
+
+        var transaction = remote.transaction();
+
+        try {
+            transaction.account_set(MY_ADDRESS);
+        } catch (error) {
+            output(error);
+        }
+
+        transaction.tx_json.EmailHash = hash;
+
+        transaction.submit(function(err, res) {
+            if (err) {
+                str = JSON.stringify(err, undefined, 2);
+            }
+            if (res) {
+                str = JSON.stringify(res, undefined, 2);
+            }
+            output(str);
+            remote.disconnect();
+        });
+
+    });
+
+}
+
+    </script>
+  </head>
+  <body>
+    <h1>Set e-mail hash</h1>
+    Account address:
+    <input id="accountaddress" type=text
+           value="rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh" size=40></input><br>
+    Account secret:
+    <input id="accountsecret" type=text
+           value="snoPBrXtMeMyMHUVTgbuqAfg1SUTb" size=40></input><br>
+    E-mail address:
+    <input id="emailaddress" type=text
+           value="user@example.com" size=40></input><br>
+    <button id="submitbutton">Submit</button>
+  </body>
+</html>
