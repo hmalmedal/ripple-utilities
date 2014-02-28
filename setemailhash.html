@@ -49,7 +49,9 @@ function submittoserver() {
     }
 
     var MY_ADDRESS = document.getElementById('accountaddress').value;
+    MY_ADDRESS = MY_ADDRESS.trim();
     var MY_SECRET = document.getElementById('accountsecret').value;
+    MY_SECRET = MY_SECRET.trim();
 
     remote.connect(function() {
         // remote connected
