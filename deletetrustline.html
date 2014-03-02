@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Delete trust line</title>
+    <script src="http://cdn.jsdelivr.net/ripple/0.7.30/ripple-lib-min.js"></script>
+    <script>
+
+// Loading ripple-lib in a webpage
+var Remote = ripple.Remote;
+var Seed = ripple.Seed;
+var Currency = ripple.Currency;
+var UInt160 = ripple.UInt160;
+
+var remote = new Remote({
+    // see the API Reference for available options
+    trusted:        false,
+    local_signing:  true,
+    local_fee:      true,
+    fee_cushion:     1.5,
+    servers: [
+        {
+            host:    's1.ripple.com'
+            , port:    443
+            , secure:  true
+        }
+    ]
+});
+
+function output(inp) {
+    document.body.appendChild(document.createElement('pre')).innerHTML = inp;
+}
+
+window.onload = function() {
+    var submitbutton = document.getElementById('submitbutton');
+    submitbutton.onclick = function() {submittoserver();};
+}
+
+function submittoserver() {
+    var inQ = 1e9;
+    var outQ = 1e9;
+
+    var MY_ADDRESS = document.getElementById('accountaddress').value;
+    MY_ADDRESS = MY_ADDRESS.trim();
+    var MY_SECRET = document.getElementById('accountsecret').value;
+    MY_SECRET = MY_SECRET.trim();
+
+    var ISSUER_ADDRESS = document.getElementById('issueraddress').value;
+    ISSUER_ADDRESS = ISSUER_ADDRESS.trim();
+
+    var c_amount = 0;
+    var c_code = document.getElementById('currencycode').value;
+    c_code = c_code.trim();
+    c_code = c_code.toUpperCase();
+
+    c_str = c_amount + "/" + c_code + "/" + ISSUER_ADDRESS;
+
+    remote.connect(function() {
+        // remote connected
+
+        // see the API Reference for available functions
+
+        var str;
+
+        if (!Seed.from_json(MY_SECRET).is_valid()) {
+            output("Error: Secret invalid");
+        }
+
+        if (!Currency.from_json(c_code).is_valid()) {
+            output("Error: Currency code invalid");
+        }
+
+        if (!UInt160.is_valid(ISSUER_ADDRESS)) {
+            output("Error: Issuer address invalid");
+        }
+
+        remote.set_secret(MY_ADDRESS, MY_SECRET);
+
+        var transaction = remote.transaction();
+
+        try {
+            transaction.account_set(MY_ADDRESS);
+        } catch (error) {
+            output(error);
+        }
+
+        transaction.ripple_line_set(
+            MY_ADDRESS,
+            c_str,
+            inQ, // In
+            outQ  // Out
+        );
+
+        transaction.set_flags('ClearNoRipple');
+
+        transaction.submit(function(err, res) {
+            if (err) {
+                str = JSON.stringify(err, undefined, 2);
+            }
+            if (res) {
+                str = JSON.stringify(res, undefined, 2);
+            }
+            output(str);
+            remote.disconnect();
+        });
+
+    });
+}
+
+    </script>
+  </head>
+  <body>
+    <h1>Delete trust line</h1>
+    Account address:
+    <input id="accountaddress" type=text
+           value="rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh" size=40></input><br>
+    Account secret:
+    <input id="accountsecret" type=text
+           value="snoPBrXtMeMyMHUVTgbuqAfg1SUTb" size=40></input><br>
+    Currency code:
+    <input id="currencycode" type=text
+           value="XXX" size=5></input><br>
+    Issuer address:
+    <input id="issueraddress" type=text
+           value="rrrrrrrrrrrrrrrrrrrn5RM1rHd" size=40></input><br>
+    <button id="submitbutton">Submit</button>
+  </body>
+</html>
