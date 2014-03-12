@@ -40,11 +40,10 @@ function submittoserver() {
     email = email.trim();
     email = email.toLowerCase();
 
-    if (email === "") {
-        hash = "00000000000000000000000000000000";
-    } else {
-        var hash = CryptoJS.MD5(email);
-        hash = hash.toString();
+    var hash = "00000000000000000000000000000000";
+
+    if (email !== "") {
+        hash = CryptoJS.MD5(email).toString();
         hash = hash.toUpperCase();
     }
 
